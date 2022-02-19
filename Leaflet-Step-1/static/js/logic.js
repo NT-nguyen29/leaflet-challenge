@@ -1,6 +1,8 @@
+// formatted after lesson 15.1 #10
+
 // determine marker size based on magnitude
-function markerSize(mag){
-    return mag * 10;
+function markerSize(magnitude){
+    return magnitude * 5000;
 }
 
 // marker color based on depth
@@ -16,7 +18,7 @@ function markerColor(depth){
     else if (depth >= 10) {
         return '#0047ab'}
     else {
-        return '800080'}
+        return '#800080'}
 };
 
 // store endpoint as queryURL
@@ -30,43 +32,65 @@ d3.json(queryURL).then(function (response) {
 
     // send response to createFeatures func
     createFeatures(response.features);
-    
-    function createFeatures(earthquakeData) {
-
-        function onEachFeature(feature, layer) {
-            
-            for (var i = 0; i < response.length; i++){
-            
-                layer.bindPopup('<h3>${feature.properties.place}</h3><hr><p>${new Date(feature.properties.time)}</p>')
-            
-                earthquakeMarkers.push(
-                    L.circle([response.features.geometry.coordinates[1], response.features.geometry.coordinates[0]], {
-                        stroke: true,
-                        fillOpacity: 0.75,
-                        fillColor: markerColor(features.geometry.coordinates[2]),
-                        radius: markerSize(features.properties.mag)
-                    })
-            )};
-        }
-    }
 
 });
 
-// base layer/ background
- var street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-});
+function createFeatures(earthquakeData) {
+        
+    for (var i = 0; i < earthquakeData.length; i++){
 
-// layer group for earthquake markers
-var earthquakes = L.layerGroup(earthquakeMarkers);
+        var magnitude = earthquakeData[i].properties.mag
+        var lat = earthquakeData[i].geometry.coordinates[1]
+        var lng = earthquakeData[i].geometry.coordinates[0]
+        var latlng = [lat, lng]
+        var depth = earthquakeData[i].geometry.coordinates[2]
+        var location = earthquakeData[i].properties.place
 
-// define map object
-var myMap = L.map("map", {
-    center: [36.9991, -109.0452],
-    zoom: 5,
-    layers: [street, earthquakes]
-});
+        earthquakeMarkers.push(
+            L.circle(latlng, {
+                stroke: true,
+                fillOpacity: 0.75,
+                color: markerColor(depth),
+                radius: markerSize(magnitude)               
+            }).bindPopup(`<h3>Location: ${location}</h3><hr><p>Time: ${new Date(earthquakeData[i].properties.time)}</p>`)
+    )};
 
+    // layer group for earthquake markers
+    var earthquakes = L.layerGroup(earthquakeMarkers);
 
+    // send earthquakes layer to createMap func
+    createMap(earthquakes);
+}
 
-    
+function createMap(earthquakes) {
+
+    // base layer/ background
+    var street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
+    // baseMaps obj
+    var baseMaps = {
+        "Street Map": street
+    };
+
+    // overlayMaps obj
+    var overlayMaps = {
+        "Earthquakes": earthquakes
+    };
+
+    // define map object
+    var myMap = L.map("map", {
+        center: [58.3019, -134.4197],
+        zoom: 4,
+        layers: [street, earthquakes]
+    });
+
+    // create layer control
+    // pass baseMaps and overlayMaps
+    // add layer control to myMap
+    L.control.layers(baseMaps, overlayMaps, {
+        collapsed: false
+    }).addTo(myMap);
+
+}
